@@ -24,8 +24,6 @@ The general srtucture is to:
 https://github.com/Garden-AI/garden/issues/112
 """
 
-dl = DLHubClient()
-
 class Loading:
     """Self contained class for multithreading a loading message during execution
 
@@ -59,6 +57,10 @@ class Loading:
             sleep(0.1)
 
 
+with Loading("Instantiating DLHubClient...", "DLHubClient instantiated!"):
+    dl = DLHubClient()
+
+
 def get_dlhub_metadata(name: str) -> dict[str, str]:
     """Retrieve the metadata for the servable owned by the caller with the given name
 
@@ -79,7 +81,7 @@ def register_model(metadata: dict[str, str], flavor: str, filename: str = "model
         filename (str): The name of the serialized model file on the DLHub server (defaults to "model.pkl")
         pip_reqs (list | str): The pip requirements for the servable, can either be a list of strings or the path to a requirements.txt file
     """
-    with Loading("Instantiating GardenClient...", "Client instantiated!"):
+    with Loading("Instantiating GardenClient...", "GardenClient instantiated!"):
         client = GardenClient()
 
     with Loading("Fetching model from DLHub...", "Model Retrieved!"):
