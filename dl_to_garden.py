@@ -12,17 +12,9 @@ from dlhub_sdk import DLHubClient
 from garden_ai import GardenClient, Model, step
 from garden_ai.mlmodel import LocalModel
 
-"""
-The general srtucture is to:
-    1. get location on disk
-    2. provide to app.model.register -> use mlmodel.LocalModel and retrieve full metadata
-    3. make step that calls predict on generalized model
-    4. create pipeline (template stuffs)
-    5. synthesize pipeline.register (client.register_pipeline)
-    6. profit
-    * everywhere the CLI prints something I will too
-https://github.com/Garden-AI/garden/issues/112
-"""
+
+dl = DLHubClient()
+
 
 class Loading:
     """Self contained class for multithreading a loading message during execution
@@ -50,15 +42,10 @@ class Loading:
     def _spin(self) -> None:
         for x in cycle(self.spinner):
             if self.done:
-                print(f"\r{' ' * len(self.msg)}  ", flush=True, end="")
-                print(f"\r{self.complete}", flush=True)
+                print(f"\r{' ' * len(self.msg)}  \r{self.complete}")
                 break
-            print(f"\r{self.msg} {x}", flush=True, end="")
+            print(f"\r{self.msg} {x}", end="")
             sleep(0.1)
-
-
-with Loading("Instantiating DLHubClient...", "DLHubClient instantiated!"):
-    dl = DLHubClient()
 
 
 def get_dlhub_metadata(name: str) -> dict[str, str]:
@@ -69,7 +56,7 @@ def get_dlhub_metadata(name: str) -> dict[str, str]:
     Return:
         (dict): The metadata of the named servable
     """
-    return dl.search(f"dlhub.shorthand_name: {dl.get_username()}/{name}", advanced=True, only_latest=True)[0]
+    return dl.search(f"dlhub.shorthand_name: lsschultz_wisc/{name}", advanced=True, only_latest=True)[0]
 
 
 def register_model(metadata: dict[str, str], flavor: str, filename: str = "model.pkl", pip_reqs: list[str] | str = None) -> None:
@@ -81,13 +68,13 @@ def register_model(metadata: dict[str, str], flavor: str, filename: str = "model
         filename (str): The name of the serialized model file on the DLHub server (defaults to "model.pkl")
         pip_reqs (list | str): The pip requirements for the servable, can either be a list of strings or the path to a requirements.txt file
     """
-    with Loading("Instantiating GardenClient...", "GardenClient instantiated!"):
+    with Loading("Instantiating GardenClient...", "Client instantiated!"):
         client = GardenClient()
 
     with Loading("Fetching model from DLHub...", "Model Retrieved!"):
-        res = requests.get(f"{dl.base_url}/{metadata['dlhub']['shorthand_name']}", json={"build_location": metadata["dlhub"]["build_location"], "filename": filename})
+        res = requests.get(f"{dl.base_url}servables/{metadata['dlhub']['shorthand_name']}", json={"filename": filename})
 
-    with Loading("Writing serialized model to temporary local file...", "Model saved to temporary file!"):
+    with Loading("", "Model saved to temporary file!"):
         with open("model.pkl", "wb") as f:
             f.write(res.content)
 
@@ -98,13 +85,13 @@ def register_model(metadata: dict[str, str], flavor: str, filename: str = "model
 
         local_model = LocalModel(model_name=metadata["dlhub"]["name"],
                                  flavor=flavor,
-                                 extra_pip_requirements=pip_reqs,
+                                 extra_pip_requirements=pip_reqs,  # or []
                                  local_path="model.pkl",
                                  user_email=client.get_email())
         registered_model = client.register_model(local_model)
 
-    with Loading("Removing local model temporary file...", "Temporary file removed!"):
-        os.remove("model.pkl")
+    """ with Loading("Removing local model temporary file...", "Temporary file removed!"):
+        os.remove("model.pkl") """
 
     with Loading("Defining step for pipeline creation...", "Step defined!"):
         @step
@@ -135,7 +122,7 @@ def register_model(metadata: dict[str, str], flavor: str, filename: str = "model
 
 def main() -> None:
     """Run the script"""
-    register_model(get_dlhub_metadata("noopv10"), "sklearn")
+    register_model(get_dlhub_metadata("GB_2"), "sklearn", "GB_2_model.pickle", [])
 
 
 if __name__ == "__main__":
