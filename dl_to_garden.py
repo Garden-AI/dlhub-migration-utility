@@ -56,7 +56,7 @@ def get_dlhub_metadata(name: str) -> dict[str, str]:
     Return:
         (dict): The metadata of the named servable
     """
-    return dl.search(f"dlhub.shorthand_name: lsschultz_wisc/{name}", advanced=True, only_latest=True)[0]
+    return dl.search(f"dlhub.shorthand_name: {dl.get_username()}/{name}", advanced=True, only_latest=True)[0]
 
 
 def register_model(metadata: dict[str, str], flavor: str, filename: str = "model.pkl", pip_reqs: list[str] | str = None) -> None:
@@ -90,8 +90,8 @@ def register_model(metadata: dict[str, str], flavor: str, filename: str = "model
                                  user_email=client.get_email())
         registered_model = client.register_model(local_model)
 
-    """ with Loading("Removing local model temporary file...", "Temporary file removed!"):
-        os.remove("model.pkl") """
+    with Loading("Removing local model temporary file...", "Temporary file removed!"):
+        os.remove("model.pkl")
 
     with Loading("Defining step for pipeline creation...", "Step defined!"):
         @step
